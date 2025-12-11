@@ -1,0 +1,4 @@
+**/build/
+**/stream_hub.egg-info/
+**/tests/
+**/__pycache__/

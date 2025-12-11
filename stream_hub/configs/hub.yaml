@@ -1,0 +1,26 @@
+zmq:
+  hub_endpoint: "tcp://127.0.0.1:7500"
+  proxy_endpoint: "tcp://127.0.0.1:7501"
+
+feedbacks:
+  ui:
+    zmq: "tcp://127.0.0.1:7203"
+    events:
+      - user_selection
+
+  perception:
+    zmq: "tcp://127.0.0.1:7201"
+    events:
+      - objects_counts
+      - spatial_object
+
+  analytics:
+    zmq: "tcp://127.0.0.1:7202"
+    events:
+      - accident
+      - mistake
+
+ingestion:
+  reconnect_delay_sec: 5
+  max_retries: 0
+  fps: 30

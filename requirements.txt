@@ -1,0 +1,7 @@
+pytest
+pytest-mock
+opencv-contrib-python
+pyzmq
+pyyaml
+pydantic
+turbojpeg

@@ -1,0 +1,15 @@
+[project]
+name = "stream_hub"
+version = "0.1.0"
+description = "real-time streaming hub"
+requires-python = ">=3.9"
+authors = [
+    {name = "sajjad", email = "sajjadrajabi.2003@gmail.com"},
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
