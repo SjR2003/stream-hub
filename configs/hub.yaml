@@ -1,21 +1,21 @@
 zmq:
-  hub_endpoint: "tcp://127.0.0.1:7500"
+  hub_endpoint: "tcp://0.0.0.0:7500"
   proxy_endpoint: "tcp://127.0.0.1:7501"
 
 feedbacks:
   ui:
-    zmq: "tcp://127.0.0.1:7203"
+    zmq: "tcp://0.0.0.0:7203"
     events:
       - user_selection
 
   perception:
-    zmq: "tcp://127.0.0.1:7201"
+    zmq: "tcp://0.0.0.0:7201"
     events:
       - objects_counts
       - spatial_object
 
   analytics:
-    zmq: "tcp://127.0.0.1:7202"
+    zmq: "tcp://0.0.0.0:7202"
     events:
       - accident
       - mistake

@@ -1,0 +1,15 @@
+streams:
+  - id: cam1
+    source: rtsp://host.docker.internal:8554/cam1
+    enabled: true
+    fps: 30
+
+  - id: cam2
+    source: rtsp://host.docker.internal:8554/cam2
+    enabled: true
+    fps: 30
+
+  - id: cam3
+    source: rtsp://host.docker.internal:8554/cam3
+    enabled: true
+    fps: 30
