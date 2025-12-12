@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  stream-hub:
+    build: .
+    container_name: stream_hub
+
+    command:
+      - "--hub_config=/configs/hub.yaml"
+      - "--stream_config=/configs/streams.yaml"
+
+    volumes:
+      - ./configs:/configs:ro
+
+    env_file:
+      - .env
+
+    ports:
+      # HUB (XPUB → consumers)
+      - "${HUB_PORT}:${HUB_PORT}"
+
+      # FEEDBACK ports (external producers)
+      - "${FB_UI_PORT}:${FB_UI_PORT}"
+      - "${FB_PERCEPTION_PORT}:${FB_PERCEPTION_PORT}"
+      - "${FB_ANALYTICS_PORT}:${FB_ANALYTICS_PORT}"
+
+    restart: unless-stopped
