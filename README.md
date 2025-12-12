@@ -215,13 +215,13 @@ Edit `configs/streams.yaml`:
 
 Edit `configs/hub.yaml`:
 
-### 4. Generate `.env` from config
+#### 4. Generate `.env` from config
 
 ```bash
 python utils/generate_env.py --hub_config configs/hub.yaml
 ```
 
-### 5. Run container
+#### 5. Run container
 
 ```bash
 docker compose up --build
