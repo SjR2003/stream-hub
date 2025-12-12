@@ -1,60 +1,141 @@
 # Stream Hub
 
-A lightweight, high-performance **multi-camera ingestion and synchronization hub** designed for real-time AI pipelines, analytics systems, and UI consumption.
+Stream Hub is a lightweight, high-performance **A real-time multi-camera ingestion and synchronization backbone**
+designed to sit at the core of real-time AI pipelines.
 
-Stream Hub captures multiple RTSP streams, timestamps frames, injects event-based metadata, and publishes synchronized JPEG frames over ZeroMQ to a set of independent consumer modules (e.g., perception, analytics, UI).
+It captures multiple RTSP streams, timestamps frames with low latency, injects event-based metadata,
+and publishes synchronized JPEG frames over ZeroMQ to independent downstream consumers
+such as perception, analytics, and UI modules.
 
-It is designed to be modular, fast, and easy to integrate into complex video-based systems without manually wiring modules together.
+The hub is intentionally **decoupled**:
+it does not run AI models, dashboards, or business logic.
+Instead, it acts as a real-time coordination and data-routing backbone.
 
 ---
 
 ## Demo
 
-<video src="" 
-       width="640" 
-       autoplay 
-       loop 
-       muted 
+> A short demo video showcasing multi-camera ingestion and synchronized playback
+> will be added soon.
+
+<video src=""
+       width="640"
+       autoplay
+       loop
+       muted
        playsinline>
 </video>
+
 
 ---
 
 ## Key Features
 
-* **Multi-stream ingestion** with per-stream workers
-* **Zero buffering RTSP capture** → avoids internal RTSP latency
-* **Accurate per-frame timestamping** for stream synchronization
-* **Event feedback system** from downstream modules (UI, analytics, perception)
-* **Metadata injection** into each frame
-* **Decoupled architecture** using ZMQ pub/sub
-* **Config-driven**, scalable, and easy to deploy (local or Docker)
+- **Multi-stream ingestion** using isolated worker processes
+- **Low-latency RTSP capture** (minimal internal buffering)
+- **Accurate per-frame timestamping** (RTSP timestamps are unreliable)
+- **Event feedback loop** from external modules (UI, analytics, perception)
+- **Metadata injection** per frame
+- **Fully decoupled architecture** via ZeroMQ XPUB/XSUB
+- **Config-driven design** (no hard-coded ports or routes)
+- **Docker-friendly** (single-service container)
 
 ---
 
 ## High-Level Architecture
 
-Below is the system flow illustrated in the provided diagram:
+Stream Hub sits between cameras and consumer modules.
+It enables complex multi-module systems without direct module-to-module wiring.
 
-<!-- ![Image]() -->
+Cameras → Stream Hub → Consumers  
+Consumers → Feedback → Stream Hub
+
+<div align="center">
+  <img
+    width="1280"
+    height="320"
+    alt="Stream Hub Architecture"
+    src="https://github.com/user-attachments/assets/e40420bd-92f1-415e-bf09-7cfbf86c34c7"
+  />
+  <p><em>High-level Stream Hub architecture and data flow</em></p>
+</div>
+
 
 **Pipeline overview:**
 
-1. **Capture RTSP streams** from multiple cameras
-2. **Timestamp each frame** (RTSP normally lacks usable timestamps)
-3. **Assign event feedback** from consumer modules (UI, analytics, perception)
-4. **Generate metadata** per frame
-5. **Broadcast frames + metadata** via ZMQ PUB/SUB
-6. **Consumer modules act independently**, based on events relevant to them
-7. **Feedback events** flow back to Stream Hub to adjust stream priorities or UI selections
+```text
+RTSP Cameras
+     |
+     ▼
+[ Stream Workers ]  ← per camera (process-based)
+     |
+     ▼
+[ ZMQ XSUB ]        ← internal
+     |
+     ▼
+[ ZMQ XPUB ]  ───────────► Consumers (UI / Analytics / Perception)
+     ▲
+     |
+Feedback Events (ZMQ PUB)
+```
 
-**Feedback channels:** (it's flexible and can be changed in the config file `hub.yaml`)
+---
 
-| Module     | Endpoint               | Events                        |
-| ---------- | ---------------------- | ----------------------------- |
-| perception | `tcp://127.0.0.1:7201` | objects_count, spatial_object |
-| analytics  | `tcp://127.0.0.1:7202` | accident, mistake             |
-| UI         | `tcp://127.0.0.1:7203` | user_selection                |
+## Feedback Channels
+
+Feedback channels allow downstream modules to influence
+how frames are annotated or prioritized — without direct coupling.
+Feedback events are **optional** and **non-blocking**.
+If a consumer is offline, Stream Hub continues operating normally.
+
+All feedback routing is defined in `hub.yaml`.
+
+
+| Module     | Direction | Example Events    |
+| ---------- | --------- | ----------------- |
+| UI         | → Hub     | user_selection    |
+| Perception | → Hub     | spatial_object    |
+| Analytics  | → Hub     | accident, mistake |
+
+---
+
+## Configuration
+
+Stream Hub is fully driven by YAML configuration.
+Restarting the container is enough to apply changes.
+
+
+#### `streams.yaml`
+
+```yaml
+streams:
+  - id: cam1
+    source: rtsp://host.docker.internal:8554/cam1
+    enabled: true
+    fps: 30
+```
+
+* `id`: logical stream identifier
+* `source`: RTSP URL (simulated or real camera)
+* `fps`: enforced output FPS (not camera FPS)
+
+
+
+#### `hub.yaml`
+
+```yaml
+zmq:
+  hub_endpoint: "tcp://0.0.0.0:7500"   # consumers connect here
+  proxy_endpoint: "tcp://127.0.0.1:7501" # internal workers only
+
+feedbacks:
+  ui:
+    zmq: "tcp://0.0.0.0:7203"
+    events: [user_selection]
+```
+
+> ⚠️ `proxy_endpoint` is **internal only**
+> `hub_endpoint` and feedback ports may be exposed externally.
 
 ---
 
@@ -88,46 +169,80 @@ stream_hub/
 
 ## Quick Start
 
-### 1. Clone the repository
+### Local usage
+
+#### 1. Clone the repository
+
+```
+git clone https://github.com/your/repo.git
+cd stream-hub
+```
+
+#### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+#### 3. Configure streams
+
+Edit `configs/streams.yaml`:
+
+#### 4. Configure hub and feedback routing
+
+Edit `configs/hub.yaml`:
+
+#### 5. Run Stream Hub
+
+```bash
+python -m stream_hub.main --stream_config path_to_`streams.yaml`  --hub_config path_to_`hub.yaml`
+```
+
+###  Docker Usage
+
+#### 1. Clone the repository
 
 ```bash
 git clone https://github.com/your/repo.git
 cd stream-hub
 ```
 
-### 2. Install dependencies
+#### 2. Configure streams
+
+Edit `configs/streams.yaml`:
+
+#### 3. Configure hub and feedback routing
+
+Edit `configs/hub.yaml`:
+
+### 4. Generate `.env` from config
 
 ```bash
-pip install -r requirements.txt
+python utils/generate_env.py --hub_config configs/hub.yaml
 ```
 
-### 3. Configure streams
-
-Edit `stream_hub/configs/streams.yaml`:
-
-```yaml
-streams:
-  - id: cam1
-    source: "rtsp://localhost:8554/cam1"
-    enabled: true
-    fps: 30
-```
-
-### 4. Configure hub and feedback routing
-
-Edit `hub.yaml`:
-
-```yaml
-zmq:
-  hub_endpoint: "tcp://127.0.0.1:7500"
-  proxy_endpoint: "tcp://127.0.0.1:7501"
-```
-
-### 5. Run Stream Hub
+### 5. Run container
 
 ```bash
-python -m stream_hub.main
+docker compose up --build
 ```
+
+After the first build if config change:
+
+```bash
+python utils/generate_env.py --hub_config configs/hub.yaml
+```
+
+```bash
+docker compose up -d --force-recreate
+```
+
+otherwise:
+
+```bash
+docker compose up
+```
+This setup is optimized for edge devices and on-prem deployments.
 
 ---
 
@@ -201,13 +316,14 @@ Consumers simply `SUB` to the hub endpoint and decode JPEG frames as needed.
 
 ---
 
-## Feature work
+## Roadmap
 
-- complete Docker configuration
-- delete print statements and fix logger bug
+- [ ] Replace print statements with structured logging
+- [ ] Improve latency metrics and observability
 
 ---
 
 ## License
 
-MIT (or specify your license)
+MIT
+
