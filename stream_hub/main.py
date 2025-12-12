@@ -1,9 +1,10 @@
-from pathlib import Path    
+
+
+from argparse import ArgumentParser
 import multiprocessing
 import threading
 import logging
 import signal
-import ctypes
 import time
 
 from stream_hub.ingestion.stream_manager import StreamManager
@@ -12,20 +13,25 @@ from stream_hub.network.proxy import ZmqHubProxy
 from stream_hub.utils.utils import load_yaml
 
 def main():
+    arg_parser = ArgumentParser(description="Stream Hub")
+    arg_parser.add_argument(
+        "--stream_config", type=str, default=None, help="Path to stream configuration YAML file"
+    )
+    arg_parser.add_argument(
+        "--hub_config", type=str, default=None, help="Path to hub configuration YAML file"
+    )
+    args = arg_parser.parse_args()  
+
     logger = setup_logger("stream-hub", level=logging.INFO)
-    ctypes.WinDLL('winmm').timeBeginPeriod(1)
 
-    base_dir = Path(__file__).resolve().parent
-    cfg_dir = base_dir / "configs"
-
-    streams_cfg = load_yaml(cfg_dir / "streams.yaml").get("streams", [])
-    hub_cfg = load_yaml(cfg_dir / "hub.yaml")
+    streams_cfg = load_yaml(args.stream_config).get("streams", [])
+    hub_cfg = load_yaml(args.hub_config)
 
     zmq_cfg = hub_cfg.get("zmq", {})
     ingestion_cfg = hub_cfg.get("ingestion", {})
 
     feedbacks = hub_cfg.get("feedbacks")
-    hub_endpoint = zmq_cfg.get("hub_endpoint", "tcp://127.0.0.1:7500")
+    hub_endpoint = zmq_cfg.get("hub_endpoint", "tcp://0.0.0.0:7500")
     proxy_endpoint = zmq_cfg.get("proxy_endpoint", "tcp://127.0.0.1:7501")
 
     proxy = ZmqHubProxy(pub_port=hub_endpoint, sub_port=proxy_endpoint)
@@ -59,7 +65,6 @@ def main():
     logger.info("Waiting for workers to close ...")
     manager.stop()
 
-    ctypes.WinDLL('winmm').timeEndPeriod(1)
     logger.info("Stream-hub stopped cleanly")
 
 if __name__ == "__main__":

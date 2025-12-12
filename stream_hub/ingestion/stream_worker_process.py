@@ -2,6 +2,7 @@
 from datetime import datetime
 from typing import Dict
 import logging
+import os
 import ctypes
 import time
 
@@ -45,7 +46,9 @@ class StreamProcessWorker:
 
     def run(self):
         print(f"[{self.__stream_id}] Worker started")
-        ctypes.WinDLL("winmm").timeBeginPeriod(1)
+
+        if os.name == "nt":  # Windows
+            ctypes.WinDLL("winmm").timeBeginPeriod(1)
 
         self.__init_zmq_handler()
 
@@ -109,7 +112,10 @@ class StreamProcessWorker:
             if worker:
                 worker.close()
             print(f"[{self.__stream_id}] Worker shutting down → {self.__stats}")
-            ctypes.WinDLL("winmm").timeEndPeriod(1)
+            
+            if os.name == "nt":
+                ctypes.WinDLL("winmm").timeEndPeriod(1)
+
 
     def __get_events_feedback(self, stream_id: str) -> Dict:
         packet = self.__zmq_handler.get_feedback(stream_id)
