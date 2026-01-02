@@ -1,6 +1,6 @@
-import zmq
 import threading
 import logging
+import zmq
 
 class ZmqHubProxy:
     def __init__(self, pub_port="tcp://*:7500", sub_port="tcp://*:7501"):

@@ -1,9 +1,8 @@
-# stream_hub/publishers/zmq_handler.py
-import zmq
+from typing import Any, Dict, Optional
+from threading import Thread, Lock
 import logging
 import time
-from threading import Thread, Lock
-from typing import Any, Dict, Optional
+import zmq
 
 from stream_hub.utils.latency_logger import measure_latency
 
@@ -51,13 +50,11 @@ class ZmqHandler:
             self.__feedback_thread.start()
 
     @measure_latency
-    def publish(self, metadata: Dict[str, Any], jpeg_bytes: bytes) -> None:
+    def publish(self, message) -> None:
         if self.__pub_socket is None:
             raise RuntimeError("ZmqHandler.publish() called before initialize_runtime()")
-
-        msg = {"metadata": metadata, "jpeg_bytes": jpeg_bytes}
         try:
-            self.__pub_socket.send_pyobj(msg)
+            self.__pub_socket.send_pyobj(message)
         except Exception as e:
             print(f"[ZMQ] Publish error on {self.__proxy_endpoint}: {e}")
 

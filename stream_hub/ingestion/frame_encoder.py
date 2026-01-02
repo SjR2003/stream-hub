@@ -1,8 +1,10 @@
-import cv2
+from typing import Optional
 import numpy as np
 import logging
-from typing import Optional
+import cv2
+
 from stream_hub.utils.latency_logger import measure_latency 
+
 logger = logging.getLogger(__name__)
 
 class FrameEncoder:

@@ -1,9 +1,9 @@
-import cv2
-import time
-import logging
-from threading import Thread
-from collections import deque
 from stream_hub.utils.latency_logger import measure_latency
+from collections import deque
+from threading import Thread
+import logging
+import time
+import cv2
 
 class CaptureWorker:
     def __init__(self, stream_id: str, url: str, fps: int = 15):

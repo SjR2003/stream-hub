@@ -1,15 +1,16 @@
-# stream_hub/ingestion/stream_worker_process.py
 from datetime import datetime
 from typing import Dict
+import numpy as np
 import logging
-import os
 import ctypes
+import os
 import time
 
 from stream_hub.ingestion.capture_worker import CaptureWorker
+from stream_hub.schemas.metadata import PacketMetadata
 from stream_hub.network.zmq_handler import ZmqHandler
 from stream_hub.utils.logger import setup_logger
-
+from stream_hub.schemas.packet import Packet
 
 def stream_worker_entry(stream_cfg, proxy_endpoint: str, feedbacks: Dict, default_fps: int):
     setup_logger(f"worker-{stream_cfg['id']}", level=logging.INFO)
@@ -42,6 +43,20 @@ class StreamProcessWorker:
             "reconnects": 0,
             "start_time": datetime.now(),
         }
+
+        self.__metadata = PacketMetadata(
+            stream_id=self.__stream_id,
+            frame_id=0,
+            timestamp=0.0,
+            source=self.__source,
+            events={},
+            frame_size=0,
+        )
+
+        self.__packet = Packet(
+            metadata=self.__metadata,
+            frame=np.empty((0, 0, 3), dtype=np.uint8),
+        )
 
     def run(self):
         print(f"[{self.__stream_id}] Worker started")
@@ -76,16 +91,14 @@ class StreamProcessWorker:
                     
                     events = self.__get_events_feedback(self.__stream_id)
 
-                    metadata = {
-                        "stream_id": self.__stream_id,
-                        "frame_id": frame_id,
-                        "timestamp": ts,
-                        "source": self.__source,
-                        "events": events,
-                        "frame_size": len(frame),
-                    }
+                    self.__metadata.frame_id = frame_id
+                    self.__metadata.timestamp = ts
+                    self.__metadata.events = events
+                    self.__metadata.frame_size = len(frame)
+                    self.__packet.metadata = self.__metadata
+                    self.__packet.frame = frame
 
-                    self.__zmq_handler.publish(metadata, frame)
+                    self.__zmq_handler.publish(self.__packet.model_dump())
                     self.__stats["frames_processed"] += 1
 
                     elapsed = time.perf_counter() - t0
@@ -101,7 +114,6 @@ class StreamProcessWorker:
                         worker.close()
                         worker = None
                     time.sleep(self.__reconnect_delay)
-
         finally:
             if worker:
                 worker.close()

@@ -1,5 +1,6 @@
-import logging
 from multiprocessing import Process
+import logging
+
 from stream_hub.ingestion.stream_worker_process import stream_worker_entry
 
 class StreamManager:
