@@ -7,7 +7,6 @@ import ctypes
 import time
 
 from stream_hub.ingestion.capture_worker import CaptureWorker
-from stream_hub.ingestion.frame_encoder import FrameEncoder
 from stream_hub.network.zmq_handler import ZmqHandler
 from stream_hub.utils.logger import setup_logger
 
@@ -74,12 +73,7 @@ class StreamProcessWorker:
                         self.__stats["frames_failed"] += 1
                         time.sleep(0.02)
                         continue
-
-                    jpeg = FrameEncoder.encode(frame, 85)
-                    if jpeg is None:
-                        self.__stats["frames_failed"] += 1
-                        continue
-
+                    
                     events = self.__get_events_feedback(self.__stream_id)
 
                     metadata = {
@@ -88,10 +82,10 @@ class StreamProcessWorker:
                         "timestamp": ts,
                         "source": self.__source,
                         "events": events,
-                        "frame_size": len(jpeg),
+                        "frame_size": len(frame),
                     }
 
-                    self.__zmq_handler.publish(metadata, jpeg)
+                    self.__zmq_handler.publish(metadata, frame)
                     self.__stats["frames_processed"] += 1
 
                     elapsed = time.perf_counter() - t0
